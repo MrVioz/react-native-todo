@@ -1,31 +1,75 @@
-import {View, Text, StyleSheet, Button, Modal, TouchableWithoutFeedback, Keyboard, TextInput} from 'react-native';
-import {useState} from 'react';
+import {
+    View,
+    Text,
+    StyleSheet,
+    Button,
+    Modal,
+    TextInput,
+    TouchableOpacity, FlatList, Alert,
+} from 'react-native';
+import {useEffect, useState} from 'react';
+import {createTodo, deleteTodo, getTodos} from '../services/api.ts';
 
 interface User {
     username: string;
     age: number;
 }
 
+interface Todo {
+    id: number;
+    title: string;
+    description: string;
+    date: string;
+    priority: number;
+    isDone: boolean;
+}
+
 const HomeScreen = () => {
-    const user:User = {
+    const user: User = {
         username: 'Jan',
         age: 27,
     };
+    const [todos, setTodos] = useState<Todo[]>([]);
     const [modalVisible, setModalVisible] = useState(false);
-    const [taskTitle, setTaskTitle] = useState('');
-    const [taskDescription, setTaskDescription] = useState('');
-    const [error, setError] = useState('');
+    const [title, setTitle] = useState('');
+    const [description, setDescription] = useState('');
+    const [priority, setPriority] = useState('');
 
-    const handleAddTask = () => {
-        if (taskTitle.trim() === '') {
-            setError('Title cannot be empty');
-            return;
+    useEffect(() => {
+        fetchTodos();
+    }, []);
+
+    const fetchTodos = async () => {
+        try {
+            const data = await getTodos();
+            setTodos(data);
+        } catch (error) {
+            console.error('Error fetching todos:', error);
         }
-        console.log('Task added:', { taskTitle, taskDescription });
-        setTaskTitle('');
-        setTaskDescription('');
-        setError('');
-        setModalVisible(false);
+    };
+    const handleAddTodo = async () => {
+        if (!title.trim() || !description.trim() || !priority.trim()) {
+            return Alert.alert('all fields are required');
+        }
+
+        try {
+            await createTodo(title, description, parseInt(priority, 10));
+            setTitle('');
+            setDescription('');
+            setPriority('');
+            setModalVisible(false);
+            fetchTodos(); // Aktualisiere die Liste nach dem Hinzufügen
+        } catch (error) {
+            console.error('Error creating todo:', error);
+        }
+    };
+    const handleDeleteTodo = async (id: number) => {
+        try {
+            await deleteTodo(id);
+            fetchTodos(); // Aktualisiere die Liste nach dem Löschen
+        } catch (error) {
+            console.error('Error deleting todo:', error);
+        }
     };
 
     return (
@@ -43,90 +87,47 @@ const HomeScreen = () => {
                 {'\n'}
                 It's nice to see you again. Please create a new Task!
             </Text>
-            <Button title={'add task!'} onPress={()=>{setModalVisible(true);}}/>
-            <Modal
-                animationType="slide"
-                transparent={true}
-                visible={modalVisible}
-                onRequestClose={() => setModalVisible(false)}
-            >
-                <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-                    <View style={styles.modalBackground}>
-                        <View style={styles.modalContainer}>
-                            <Text style={styles.modalTitle}>Create a new Task</Text>
-
-                            <TextInput
-                                style={styles.input}
-                                placeholder="Task Title"
-                                value={taskTitle}
-                                onChangeText={setTaskTitle}
-                            />
-                            {error ? <Text style={styles.errorText}>{error}</Text> : null}
-
-                            <TextInput
-                                style={styles.input}
-                                placeholder="Task Description (optional)"
-                                value={taskDescription}
-                                onChangeText={setTaskDescription}
-                            />
-
-                            <View style={styles.buttonContainer}>
-                                <Button title="Cancel" color="red" onPress={() => setModalVisible(false)} />
-                                <Button title="Add" onPress={handleAddTask} />
-                            </View>
-                        </View>
+            <FlatList
+                data={todos}
+                keyExtractor={(item) => item.id.toString()}
+                renderItem={({item}) => (
+                    <View style={styles.todoItem}>
+                        <Text style={styles.todoTitle}>{item.title}</Text>
+                        <Text>{item.description}</Text>
+                        <TouchableOpacity onPress={() => handleDeleteTodo(item.id)}>
+                            <Text style={styles.deleteButton}>❌</Text>
+                        </TouchableOpacity>
                     </View>
-                </TouchableWithoutFeedback>
-
+                )}
+            />
+            <Button title={'add task!'} onPress={() => {
+                setModalVisible(true);
+            }}/>
+            <Modal visible={modalVisible} animationType="slide">
+                <View style={styles.modalContainer}>
+                    <Text style={styles.modalTitle}>Create a new Task</Text>
+                    <TextInput style={styles.input} placeholder="Title" value={title} onChangeText={setTitle}/>
+                    <TextInput style={styles.input} placeholder="Description" value={description}
+                               onChangeText={setDescription}/>
+                    <TextInput style={styles.input} placeholder="Priority (1-5)" value={priority}
+                               onChangeText={setPriority} keyboardType="numeric"/>
+                    <Button title="Add" onPress={handleAddTodo}/>
+                    <Button title="Cancel" color="red" onPress={() => setModalVisible(false)}/>
+                </View>
             </Modal>
         </View>
     );
 };
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        padding: 16,
-    },
-    titleText: {
-        fontSize: 20,
-        fontWeight: 'bold',
-    },
-    modalBackground: {
-        flex: 1,
-        backgroundColor: 'rgba(0,0,0,0.5)',
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    modalContainer: {
-        width: '80%',
-        backgroundColor: 'white',
-        padding: 20,
-        borderRadius: 10,
-        elevation: 5,
-    },
-    modalTitle: {
-        fontSize: 18,
-        fontWeight: 'bold',
-        marginBottom: 10,
-    },
-    input: {
-        borderWidth: 1,
-        borderColor: '#ccc',
-        padding: 10,
-        marginVertical: 10,
-        borderRadius: 5,
-    },
-    errorText: {
-        color: 'red',
-        fontSize: 12,
-    },
-    buttonContainer: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        marginTop: 10,
-    },
+    container: {flex: 1, padding: 20, backgroundColor: '#fff'},
+    titleText: {fontSize: 24, fontWeight: 'bold', marginBottom: 10},
+    todoItem: {flexDirection: 'row', justifyContent: 'space-between', padding: 10, borderBottomWidth: 1},
+    todoTitle: {fontSize: 18, fontWeight: 'bold'},
+    deleteButton: {color: 'red', fontSize: 18},
+    modalContainer: {flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20},
+    modalTitle: {fontSize: 20, fontWeight: 'bold', marginBottom: 10},
+    input: {borderWidth: 1, borderColor: '#ccc', padding: 10, width: '100%', marginVertical: 5},
 });
 export {HomeScreen};
+
 
