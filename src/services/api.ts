@@ -1,5 +1,4 @@
 import axios from 'axios';
-import {Todo} from "../interfaces/Todo.ts";
 
 const API_BASE_URL = 'http://10.0.2.2:3000';
 
@@ -10,7 +9,7 @@ const api = axios.create({
     },
 });
 
-export const getTodos = async (): Promise<Todo> => {
+export const getTodos = async () => {
     const response = await api.get('/todos');
     return response.data;
 };

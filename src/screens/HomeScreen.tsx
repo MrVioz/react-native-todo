@@ -5,11 +5,11 @@ import {
     Button,
     Modal,
     TextInput,
-    TouchableOpacity, FlatList, Alert,
+    TouchableOpacity, FlatList, Alert, Switch,
 } from 'react-native';
 import {useEffect, useState} from 'react';
-import {createTodo, deleteTodo, getTodos} from '../services/api.ts';
-import {Todo} from "../interfaces/Todo.ts";
+import {createTodo, deleteTodo, getTodos, updateTodo} from '../services/api.ts';
+import {Todo} from '../interfaces/Todo.ts';
 
 interface User {
     username: string;
@@ -52,7 +52,7 @@ const HomeScreen = () => {
             setDescription('');
             setPriority('');
             setModalVisible(false);
-            fetchTodos(); // Aktualisiere die Liste nach dem Hinzufügen
+            fetchTodos();
         } catch (error) {
             console.error('Error creating todo:', error);
         }
@@ -60,10 +60,14 @@ const HomeScreen = () => {
     const handleDeleteTodo = async (id: number) => {
         try {
             await deleteTodo(id);
-            fetchTodos(); // Aktualisiere die Liste nach dem Löschen
+            fetchTodos();
         } catch (error) {
             console.error('Error deleting todo:', error);
         }
+    };
+    const toggleTodoStatus = async (id: number, isDone: boolean) => {
+        await updateTodo(id, { isDone: !isDone });
+        fetchTodos();
     };
 
     return (
@@ -88,6 +92,10 @@ const HomeScreen = () => {
                     <View style={styles.todoItem}>
                         <Text style={styles.todoTitle}>{item.title}</Text>
                         <Text>{item.description}</Text>
+                        <Switch
+                            value={item.isDone}
+                            onValueChange={() => toggleTodoStatus(item.id, item.isDone)}
+                        />
                         <TouchableOpacity onPress={() => handleDeleteTodo(item.id)}>
                             <Text style={styles.deleteButton}>❌</Text>
                         </TouchableOpacity>
