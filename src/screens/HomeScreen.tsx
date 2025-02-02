@@ -9,20 +9,14 @@ import {
 } from 'react-native';
 import {useEffect, useState} from 'react';
 import {createTodo, deleteTodo, getTodos} from '../services/api.ts';
+import {Todo} from "../interfaces/Todo.ts";
 
 interface User {
     username: string;
     age: number;
 }
 
-interface Todo {
-    id: number;
-    title: string;
-    description: string;
-    date: string;
-    priority: number;
-    isDone: boolean;
-}
+
 
 const HomeScreen = () => {
     const user: User = {
