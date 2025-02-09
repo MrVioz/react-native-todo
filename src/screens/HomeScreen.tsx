@@ -30,7 +30,7 @@ const HomeScreen = ({ navigation }) => {
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
     const [priority, setPriority] = useState('');
-    const [expandedTodo, setExpandedTodo] = useState<number | null>(null); // Speichert die geöffnete Task-ID
+    const [expandedTodo, setExpandedTodo] = useState<number | null>(null);
 
     useEffect(() => {
         fetchTodos();
@@ -39,7 +39,8 @@ const HomeScreen = ({ navigation }) => {
     const fetchTodos = async () => {
         try {
             const data = await getTodos();
-            setTodos(data);
+            const activeTodos = data.filter(todo => !todo.isDone); // Nur nicht erledigte Todos
+            setTodos(activeTodos);
         } catch (error) {
             console.error('Error fetching todos:', error);
         }
@@ -77,31 +78,30 @@ const HomeScreen = ({ navigation }) => {
 
     const toggleTodoStatus = async (id: number, isDone: boolean) => {
         await updateTodo(id, { isDone: !isDone });
-        if (!isDone) {
-            ToastAndroid.showWithGravity('Great Job! You finished your Task', ToastAndroid.SHORT, ToastAndroid.BOTTOM);
-        }
-        fetchTodos();
+        fetchTodos(); // Todos neu laden
     };
 
     return (
         <View style={styles.container}>
             <Text style={styles.titleText}>Your Todos! 🎉</Text>
             <Text style={styles.subtitle}>Hello {user.username} 🎉 It's nice to see you again.</Text>
+
+            {/* FlatList mit nur nicht erledigten Todos */}
             <View style={styles.listContainer}>
                 <FlatList
                     data={todos}
                     keyExtractor={(item) => item.id.toString()}
+                    initialNumToRender={2}
                     renderItem={({ item }) => (
                         <TouchableOpacity
                             style={styles.todoItem}
-                            onPress={() => setExpandedTodo(expandedTodo === item.id ? null : item.id)} // Expandieren oder Einklappen
+                            onPress={() => setExpandedTodo(expandedTodo === item.id ? null : item.id)}
                         >
                             <View style={styles.todoHeader}>
                                 <Text style={styles.todoTitle}>{item.title}</Text>
                                 <Switch value={item.isDone} onValueChange={() => toggleTodoStatus(item.id, item.isDone)} />
                             </View>
 
-                            {/* Beschreibung nur anzeigen, wenn das Item aktiv ist */}
                             {expandedTodo === item.id && (
                                 <Text style={styles.todoDescription}>{item.description}</Text>
                             )}
@@ -111,6 +111,7 @@ const HomeScreen = ({ navigation }) => {
                             </TouchableOpacity>
                         </TouchableOpacity>
                     )}
+                    ListEmptyComponent={<Text style={styles.emptyText}>Keine offenen Todos.</Text>}
                 />
             </View>
 
@@ -123,7 +124,7 @@ const HomeScreen = ({ navigation }) => {
                     <TextInput style={styles.input} placeholder="Title" value={title} onChangeText={setTitle} />
                     <TextInput style={styles.input} placeholder="Description" value={description} onChangeText={setDescription} />
                     <TextInput style={styles.input} placeholder="Priority (1-5)" value={priority} onChangeText={setPriority} keyboardType="numeric" />
-                    <Button title="Add" onPress={handleAddTodo} />
+                    <Button title="Add"  onPress={handleAddTodo} />
                     <Button title="Cancel" color="red" onPress={() => setModalVisible(false)} />
                 </View>
             </Modal>
@@ -154,7 +155,7 @@ const styles = StyleSheet.create({
     listContainer: {
         flex: 1,
         width: '100%',
-        maxHeight: 400, // Feste Größe für die Liste
+        maxHeight: 800, // Feste Größe für die Liste
     },
     todoItem: {
         backgroundColor: '#f8f8f8',
@@ -192,6 +193,11 @@ const styles = StyleSheet.create({
         color: 'red',
         fontSize: 18,
     },
+    emptyText: {
+        fontSize: 16,
+        color: 'gray',
+        marginTop: 20,
+    },
     modalContainer: {
         flex: 1,
         justifyContent: 'center',
@@ -210,6 +216,11 @@ const styles = StyleSheet.create({
         width: '100%',
         marginVertical: 5,
     },
+    addButton: {
+        color: 'blue',
+        fontSize: 18,
+        marginBottom: 5,
+    }
 });
 
 export { HomeScreen };

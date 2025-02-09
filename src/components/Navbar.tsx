@@ -1,7 +1,7 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { HomeScreen } from '../screens/HomeScreen';
-import { FilterScreen } from '../screens/FilterScreen';
+import { FinishedScreen } from '../screens/FinishedScreen.tsx';
 import { StyleSheet } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 
@@ -27,7 +27,7 @@ const Navbar = () => {
             })}
         >
             <Tab.Screen name="Home" component={HomeScreen} />
-            <Tab.Screen name="Filter" component={FilterScreen} />
+            <Tab.Screen name="Filter" component={FinishedScreen} />
         </Tab.Navigator>
     );
 };
